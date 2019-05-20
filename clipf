@@ -11,7 +11,7 @@ import sys, os, cmd, datetime, shlex, re, traceback, readline
 from getopt import getopt
 from os.path import expanduser
 
-version='0.5'
+version='0.6'
 db_version='0.4'
 
 re_date=re.compile('^(((?P<year>\d+)-)?(?P<month>\d+)-)?(?P<day>\d+)$')
