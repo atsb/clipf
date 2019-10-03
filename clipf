@@ -4,14 +4,14 @@
 # Copyright (C) 2008 Denis Galtsev <galtsevdv@gmail.com>
 # clipf comes with ABSOLUTELY NO WARRANTY. Further details
 # including conditions of redistribution are contained in LICENSE.txt
-# https://gitlab.com/atsb/clipf
+# https://github.com/atsb/clipf
 #
 
 import sys, os, cmd, datetime, shlex, re, traceback, readline
 from getopt import getopt
 from os.path import expanduser
 
-version='0.6'
+version='0.5'
 db_version='0.4'
 
 re_date=re.compile('^(((?P<year>\d+)-)?(?P<month>\d+)-)?(?P<day>\d+)$')
@@ -221,7 +221,7 @@ class App(cmd.Cmd):
         return line
     def preloop(self):
         print(("""clipf v%s - Personal finance accounting in command line.
-Visit program site https://gitlab.com/atsb/clipf for details.
+Visit program site https://github.com/atsb/clipf for details.
 Type "help" for list of available commands. Type "help <command>" for help about particular command.""" % version))
     def _fx(self,m):
         m=m.group(1)
