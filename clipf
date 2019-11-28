@@ -17,7 +17,7 @@ import readline
 from getopt import getopt
 from os.path import expanduser
 
-CLIPF_APPLICATION_VERSION = '0.5'
+CLIPF_APPLICATION_VERSION = '0.6'
 CLIPF_DATABASE_VERSION = '0.4'
 
 re_date = re.compile('^(((?P<year>\d+)-)?(?P<month>\d+)-)?(?P<day>\d+)$')
