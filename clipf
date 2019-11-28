@@ -655,7 +655,7 @@ Type "help" for list of available commands. Type "help <command>" for help about
         for r in self.select(dfrom=opt.date_from):
             if r.date <= opt.date_to:
                 print(
-                    ("op add -d %(date)s -a %(acc)s %(prod)s %(amount).2f '%(note)s'" % r))
+                ("op add -d %(date)s -a %(acc)s %(prod)s %(amount).2f '%(note)s'" % r))
 
     def _op_add(self, args):
         usage = "Usage: op add [-d <op_date>] [-a acc] [-t tag] <prod_code> <amount> [note]"

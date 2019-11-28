@@ -1,9 +1,9 @@
 # clim configuration
 #
 # at startup clipf tried to import configuration from this files:
-# system-wide config at /etc/clipf.conf
-# user-level config at ~/clipf.conf
-# db-specific config at <conf_path>/clipf.conf
+# system-wide config at /etc/clipfrc
+# user-level config at ~/clipfrc
+# db-specific config at <conf_path>/clipfrc
 
 #default account for new operations
 #opt.acc='00'
@@ -32,14 +32,14 @@
 #opt.fmtc['param']='\033[35;1m%%(%s)s\033[0m'
 #opt.fmtc['prompt']="\033[31m%(date)s:%(acc)s> \033[0m"
 #opt.fmtc['spln']='\033[34m--------------------------------------\033[0m'
-    
+
 #aliases definitions
-#use 
+#use
 #  opt.aliases['<command_string_prefix>']='<prefix_substitution>'
 #to define new alias
 #
-#use 
-#  del opt.aliases['<string_prefix>'] 
+#use
+#  del opt.aliases['<string_prefix>']
 #to remove alias for <string_prefix>
 #
 #aliases defined in default configuration:
