@@ -47,7 +47,7 @@ if not os.access(confpath, os.F_OK):
         os.mkdir(dbpath)
         open(dbpath + 'op', 'w').close()
         open(dbpath + 'prod', 'w').close()
-        open(confpath + 'clipf.conf', 'w').close()
+        open(confpath + 'clipfrc', 'w').close()
         print("Done")
 
 
@@ -188,9 +188,9 @@ def execConf(fn):
         with open(fn, 'r') as execConf:
 
             # must be executed after opt class definition
-            execConf('/etc/clipf.conf')
-            execConf(expanduser('~/.clipf.conf'))
-            execConf(confpath + 'clipf.conf')
+            execConf('/etc/clipfrc')
+            execConf(expanduser('~/.clipfrc'))
+            execConf(confpath + 'clipfrc')
 
 
 if '-m' in opts or '--mono' in opts:
