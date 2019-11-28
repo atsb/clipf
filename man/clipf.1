@@ -1,4 +1,4 @@
-.TH clipf 1 
+.TH clipf 1
 .SH NAME
 clipf \- Personal finance manager with command line interface
 .SH SYNOPSIS
@@ -21,16 +21,16 @@ files.
 remains and turnover.
 .P
 .B item
-- describe categories of Your incomes/expences. Can be nested as
+- describe categories of Your incomes/expenses. Can be nested as
 files/directories in file system.
 .P
 .B item code
-- it is segmented unique identifier of item/item group. Period "."
+- it is a segmented unique identifier of item/item group. "."
 in item code define nesting levels. Period at the end of item code
-describe, that this item is group (have subling items).
+describe, that this item is a group (have subbing items).
 .P
 .B operation
-- define single money transaction (income or expense).
+- defines a single money transaction (income or expense).
 .P
 .B tag
 - arbitrary string, used for additional classification of operations.
@@ -52,8 +52,8 @@ prod add [\-d] <item_code> <item_name>
 Add new item. Type <item_name> in quotes, if it contain spaces.
 .RS
 .TP
-.B \-d 
-- define this item as income (default to expence).
+.B \-d
+- define this item as income (default to expense).
 .RE
 .TP
 prod rm <item_code_prefix>
@@ -66,7 +66,7 @@ to root level.
 .TP
 prod mv <old_item_code_prefix> <new_item_code_prefix>
 Update all item codes, which starts with <old_item_code_prefix>,
-replacing it to <new_item_code_prefix>. Item codes in operation list 
+replacing it to <new_item_code_prefix>. Item codes in operation list
 would be updated as well.
 .SH COMMANDS CONCERNING OPERATIONS
 .TP
@@ -100,7 +100,7 @@ command.
 rep prod [-t <tag_prefix>] [-a <account>] [<item_code>]
 Show turnover report for items (item groups), which are direct subling
 of <item_code> (default to root). Turnover for item group is summ of
-turnovers of all their nested items/groups. 
+turnovers of all their nested items/groups.
 .RS
 .TP
 .B -t <tag_prefix>
@@ -121,11 +121,11 @@ year, year part can be omitted. For current month, year and month
 parts can be omitted.
 Available options:
 .RS
-.TP 
+.TP
 .B date
 - default date for new operations. Can be overridden by \-d option of
 "op add".
-.TP 
+.TP
 .B date_from
 .TP
 .B date_to
@@ -152,7 +152,7 @@ commands. Alias can be defined by the pair of strings:
 line starts with any of the defined aliases <command_line_prefix>,
 this prefix would be substituted with corresponding
 <prefix_substitution_string>. Examples can be found in system
-configuration file (see 
+configuration file (see
 .B FILES
 ).
 .SH EXAMPLES
