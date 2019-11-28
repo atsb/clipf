@@ -5,18 +5,24 @@
 # clipf comes with ABSOLUTELY NO WARRANTY. Further details
 # including conditions of redistribution are contained in LICENSE.txt
 # https://github.com/atsb/clipf
-#
 
-import sys, os, cmd, datetime, shlex, re, traceback, readline
+import sys
+import os
+import cmd
+import datetime
+import shlex
+import re
+import traceback
+import readline
 from getopt import getopt
 from os.path import expanduser
 
-CLIPF_APPLICATION_VERSION='0.5'
-CLIPF_DATABASE_VERSION='0.4'
+CLIPF_APPLICATION_VERSION = '0.5'
+CLIPF_DATABASE_VERSION = '0.4'
 
-re_date=re.compile('^(((?P<year>\d+)-)?(?P<month>\d+)-)?(?P<day>\d+)$')
-opts,args = getopt(sys.argv[1:],'hm',['help','init','mono','migrate'])
-opts=dict(opts)
+re_date = re.compile('^(((?P<year>\d+)-)?(?P<month>\d+)-)?(?P<day>\d+)$')
+opts, args = getopt(sys.argv[1:], 'hm', ['help', 'init', 'mono', 'migrate'])
+opts = dict(opts)
 if '-h' in opts or '--help' in opts:
     print((""" Usage %s [-h] [--help] [--init] [-m] [--mono] [--migrate] [<conf_path>]
     <conf_path> default to ~/.clipf/
@@ -24,282 +30,308 @@ if '-h' in opts or '--help' in opts:
     -m, --mono to use monochrome output
     """ % sys.argv[0]))
     sys.exit(0)
-confpath=expanduser(args and args[0] or '~/.clipf/')
-if confpath[-1]!='/':
-    confpath+='/'
-if not os.access(confpath,os.F_OK):
+confpath = expanduser(args and args[0] or '~/.clipf/')
+if confpath[-1] != '/':
+    confpath += '/'
+if not os.access(confpath, os.F_OK):
     if args and '--init' not in opts:
         print(("config at %s does not exist. Run clipf with --init option to initialize new config" % confpath))
         sys.exit(1)
     else:
         print(("config does not exist, creating..."), end=' ')
         os.mkdir(confpath)
-        ver=open(confpath+'CLIPF_APPLICATION_VERSION','w')
+        ver = open(confpath + 'CLIPF_APPLICATION_VERSION', 'w')
         ver.write(CLIPF_DATABASE_VERSION)
         ver.close()
-        dbpath=confpath+'db/'
+        dbpath = confpath + 'db/'
         os.mkdir(dbpath)
-        open(dbpath+'op','w').close()
-        open(dbpath+'prod','w').close()
-
-        open(confpath+'clipf.conf','w').close()
+        open(dbpath + 'op', 'w').close()
+        open(dbpath + 'prod', 'w').close()
+        open(confpath + 'clipf.conf', 'w').close()
         print("Done")
 
-def _migrate(confpath,ver):
-    if ver=='0.3.5':
-        #add tag field to op
-        os.rename(confpath+'db/op',confpath+'db/op1')
-        src=open(confpath+'db/op1','r')
-        dest=open(confpath+'db/op','w')
+
+def _migrate(confpath, ver):
+    if ver == '0.3.5':
+        # add tag field to op
+        os.rename(confpath + 'db/op', confpath + 'db/op1')
+        src = open(confpath + 'db/op1', 'r')
+        dest = open(confpath + 'db/op', 'w')
         for ln in src:
-            dest.write(ln.strip('\n')+':\n')
+            dest.write(ln.strip('\n') + ':\n')
         src.close()
         dest.close()
-        os.remove(confpath+'db/op1')
+        os.remove(confpath + 'db/op1')
 
-def migrate(confpath,ver):
-    supported=['0.3.5']
+
+def migrate(confpath, ver):
+    supported = ['0.3.5']
     if ver not in supported:
         print(("Migration from version %s not supported" % ver))
         sys.exit(1)
     try:
         os.system('cp -r %s/db %s/db~' % (confpath, confpath))
-        _migrate(confpath,ver)
-        open(confpath+'CLIPF_APPLICATION_VERSION','w').write(str(CLIPF_DATABASE_VERSION))
+        _migrate(confpath, ver)
+        open(confpath + 'CLIPF_APPLICATION_VERSION',
+             'w').write(str(CLIPF_DATABASE_VERSION))
         os.system('rm -r %s/db~' % confpath)
         print("Migration completed")
     except:
         traceback.print_exc()
         os.system('rm -r %s/db' % confpath)
-        os.rename(confpath+'db~', confpath+'db')
+        os.rename(confpath + 'db~', confpath + 'db')
     sys.exit(0)
 
 
-
-#check db version
-if not os.access(confpath+'CLIPF_APPLICATION_VERSION',os.F_OK):
-    ver='0.3.5'
+# check db version
+if not os.access(confpath + 'CLIPF_APPLICATION_VERSION', os.F_OK):
+    ver = '0.3.5'
 else:
-    ver=open(confpath+'CLIPF_APPLICATION_VERSION','r').read().strip('\n')
-if ver!=CLIPF_DATABASE_VERSION:
+    ver = open(confpath + 'CLIPF_APPLICATION_VERSION', 'r').read().strip('\n')
+if ver != CLIPF_DATABASE_VERSION:
     if '--migrate' in opts:
-        migrate(confpath,ver)
+        migrate(confpath, ver)
         sys.exit(0)
     else:
         print("Version mismatch")
         print(("""db version is %s while program require %s version.
-        Run clipf with --migrate option to convert database""" % (ver,CLIPF_DATABASE_VERSION)))
+        Run clipf with --migrate option to convert database""" % (ver, CLIPF_DATABASE_VERSION)))
         sys.exit(1)
 
 
-class myerr(Exception): pass
+class myerr(Exception):
+    pass
+
 
 def check(cond, msg):
     if not cond:
         raise myerr(msg)
 
+
 def fixDate(s):
-    m=re.match(re_date,s)
-    check(m,"%s is not appropriate date value" % s)
-    cyear,cmonth,cday = datetime.date.today().timetuple()[:3]
+    m = re.match(re_date, s)
+    check(m, "%s is not appropriate date value" % s)
+    cyear, cmonth, cday = datetime.date.today().timetuple()[:3]
     y = int(m.group('year') or cyear)
-    if y<1999:
-        y+=2000
+    if y < 1999:
+        y += 2000
     mn = int(m.group('month') or cmonth)
-    d=int(m.group('day'))
-    return datetime.date(y,mn,d).isoformat()
+    d = int(m.group('day'))
+    return datetime.date(y, mn, d).isoformat()
+
 
 class dtype(type):
-    def __getitem__(clas,key):
-        return getattr(clas,key)
+    def __getitem__(clas, key):
+        return getattr(clas, key)
 
-dt=datetime.date.today().isoformat()
+
+dt = datetime.date.today().isoformat()
+
 
 class opt(object, metaclass=dtype):
-    options=['date','date_from','date_to','acc','max_lines']
-    def __getitem__(self,key):
-        return getattr(self,key)
-    date=dt
-    date_from=dt
-    date_to=dt
-    acc='00'
-    max_lines=40
-    term_enc=sys.stdin.encoding or 'utf-8'
-    db_enc='utf-8'
-    fmtc={
-        'prod':'\033[34;1m%%(%s)-10.10s\033[0m',
-        'prod_code':'\033[34;1m%%(%s)-10.10s\033[0m',
-        'prod_code_full':'\033[34;1m%%(%s)-10s\033[0m',
-        'acc_id':'\033[35;1m%%(%s)-10.10s\033[0m',
-        'prod_name':'\033[36m%%(%s)-16s\033[0m',
-        'note':'\033[36m%%(%s)s\033[0m',
-        'amount':'\033[37m%%(%s)8.2f\033[0m',
-        'date':'\033[0m%%(%s)s',
-        'tags':'\033[0m%%(%s)s',
-        'header':'\033[34;1m',
-        'param':'\033[35;1m%%(%s)s\033[0m',
-        'prompt':'\033[31m%(date)s:%(acc)s> \033[0m',
-        'spln':'\033[34m--------------------------------------\033[0m',
-        }
-    fmtm={
-        'prod':'%%(%s)-10.10s',
-        'prod_code':'%%(%s)-10.10s',
-        'prod_code_full':'%%(%s)-10s',
-        'acc_id':'%%(%s)-10.10s',
-        'prod_name':'%%(%s)-16s',
-        'note':'%%(%s)s',
-        'amount':'%%(%s)8.2f',
-        'date':'%%(%s)s',
-        'tags':'%%(%s)s',
-        'header':'',
-        'param':'%%(%s)s',
-        'prompt':'%(date)s:%(acc)s> ',
-        'spln':'--------------------------------------',
-        }
-    fmts=fmtc #default to colour output
-    aliases={
-            'oo ':'op add ',
-            'ol':'op ls',
-            'pl':'prod ls',
-            'cc ':'calc ',
-            'acc':'rep acc',
-            'o ':'op ',
-            'p ':'prod ',
-            'r ':'rep '
-            }
+    options = ['date', 'date_from', 'date_to', 'acc', 'max_lines']
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+    date = dt
+    date_from = dt
+    date_to = dt
+    acc = '00'
+    max_lines = 40
+    term_enc = sys.stdin.encoding or 'utf-8'
+    db_enc = 'utf-8'
+    fmtc = {
+        'prod': '\033[34;1m%%(%s)-10.10s\033[0m',
+        'prod_code': '\033[34;1m%%(%s)-10.10s\033[0m',
+        'prod_code_full': '\033[34;1m%%(%s)-10s\033[0m',
+        'acc_id': '\033[35;1m%%(%s)-10.10s\033[0m',
+        'prod_name': '\033[36m%%(%s)-16s\033[0m',
+        'note': '\033[36m%%(%s)s\033[0m',
+        'amount': '\033[37m%%(%s)8.2f\033[0m',
+        'date': '\033[0m%%(%s)s',
+        'tags': '\033[0m%%(%s)s',
+        'header': '\033[34;1m',
+        'param': '\033[35;1m%%(%s)s\033[0m',
+        'prompt': '\033[31m%(date)s:%(acc)s> \033[0m',
+        'spln': '\033[34m--------------------------------------\033[0m',
+    }
+    fmtm = {
+        'prod': '%%(%s)-10.10s',
+        'prod_code': '%%(%s)-10.10s',
+        'prod_code_full': '%%(%s)-10s',
+        'acc_id': '%%(%s)-10.10s',
+        'prod_name': '%%(%s)-16s',
+        'note': '%%(%s)s',
+        'amount': '%%(%s)8.2f',
+        'date': '%%(%s)s',
+        'tags': '%%(%s)s',
+        'header': '',
+        'param': '%%(%s)s',
+        'prompt': '%(date)s:%(acc)s> ',
+        'spln': '--------------------------------------',
+    }
+    fmts = fmtc  # default to colour output
+    aliases = {
+        'oo ': 'op add ',
+        'ol': 'op ls',
+        'pl': 'prod ls',
+        'cc ': 'calc ',
+        'acc': 'rep acc',
+        'o ': 'op ',
+        'p ': 'prod ',
+        'r ': 'rep '
+    }
+
 
 def execConf(fn):
-    if os.access(fn,os.F_OK):
-        with open(fn,'r') as execConf:
+    if os.access(fn, os.F_OK):
+        with open(fn, 'r') as execConf:
 
-          #must be executed after opt class definition
-          execConf('/etc/clipf.conf')
-          execConf(expanduser('~/.clipf.conf'))
-          execConf(confpath+'clipf.conf')
+            # must be executed after opt class definition
+            execConf('/etc/clipf.conf')
+            execConf(expanduser('~/.clipf.conf'))
+            execConf(confpath + 'clipf.conf')
+
 
 if '-m' in opts or '--mono' in opts:
-    opt.fmts=opt.fmtm
+    opt.fmts = opt.fmtm
+
 
 class Rec(object):
-    def __init__(self,**kwargs):
+    def __init__(self, **kwargs):
         self.__dict__.update(**kwargs)
+
     def copy(self):
         return Rec(**self.__dict__)
-    def __getitem__(self,key):
-        return getattr(self,key)
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
 
 class App(cmd.Cmd):
     def __init__(self):
         cmd.Cmd.__init__(self)
-        self.db=confpath+'db/'
-        self.prodfmt="%(prod)s:%(dc)d:%(name)s\n"
-        self.opfmt="%(date)s:%(acc)s:%(prod)s:%(amount).2f:%(dc)d:%(note)s:%(tags)s\n"
-        flds=('prod','dc','name')
-        f=open(self.db+'prod','r')
-        prodd={}
+        self.db = confpath + 'db/'
+        self.prodfmt = "%(prod)s:%(dc)d:%(name)s\n"
+        self.opfmt = "%(date)s:%(acc)s:%(prod)s:%(amount).2f:%(dc)d:%(note)s:%(tags)s\n"
+        flds = ('prod', 'dc', 'name')
+        f = open(self.db + 'prod', 'r')
+        prodd = {}
         for ln in f:
-            rr=ln.decode(opt.db_enc).rstrip('\n').split(':')
-            r=Rec(prod=rr[0],dc=int(rr[1]),name=rr[2])
-            grp=r.prod.rstrip('.')
+            rr = ln.decode(opt.db_enc).rstrip('\n').split(':')
+            r = Rec(prod=rr[0], dc=int(rr[1]), name=rr[2])
+            grp = r.prod.rstrip('.')
             try:
-                pp=grp.rindex('.')
-                grp=grp[:pp+1]
+                pp = grp.rindex('.')
+                grp = grp[:pp + 1]
             except ValueError:
-                grp=''
-            r.grp=grp
-            prodd[r.prod]=r
+                grp = ''
+            r.grp = grp
+            prodd[r.prod] = r
         f.close()
-        self.prodd=prodd
+        self.prodd = prodd
         self.setPrompt()
+
     def setPrompt(self):
-        self.prompt=opt.fmts['prompt'] % opt
-    def precmd(self,line):
-        line=line
+        self.prompt = opt.fmts['prompt'] % opt
+
+    def precmd(self, line):
+        line = line
         for key in opt.aliases.keys():
             if line.startswith(key):
-                line=opt.aliases[key]+line[len(key):]
+                line = opt.aliases[key] + line[len(key):]
         return line
+
     def preloop(self):
         print(("""clipf v%s - Personal finance accounting in command line.
 Visit program site https://github.com/atsb/clipf for details.
 Type "help" for list of available commands. Type "help <command>" for help about particular command.""" % CLIPF_APPLICATION_VERSION))
-    def _fx(self,m):
-        m=m.group(1)
+
+    def _fx(self, m):
+        m = m.group(1)
         if ':' in m:
-            fn,dt = m.split(':')
+            fn, dt = m.split(':')
         else:
-            dt,fn=m,m
+            dt, fn = m, m
         return opt.fmts[dt] % fn
-    def ffmt(self,fmt):
-        pat=re.compile(r"\$\(([a-z_:]+)\)")
-        return re.sub(pat,self._fx,fmt).replace('[[',opt.fmts['header']).replace(']]','\033[0m')
-    def gen_completions(self,text):
-        s=readline.get_line_buffer()
-        grp=s and (s[-1]!=' ') and s.split()[-1] or ''
-        pp=grp.rfind('.')
-        if pp==-1:
-            prod_group=''
+
+    def ffmt(self, fmt):
+        pat = re.compile(r"\$\(([a-z_:]+)\)")
+        return re.sub(pat, self._fx, fmt).replace('[[', opt.fmts['header']).replace(']]', '\033[0m')
+
+    def gen_completions(self, text):
+        s = readline.get_line_buffer()
+        grp = s and (s[-1] != ' ') and s.split()[-1] or ''
+        pp = grp.rfind('.')
+        if pp == -1:
+            prod_group = ''
         else:
-            prod_group=grp[:pp+1]
-        grplen=len(prod_group)
-        data=[r.prod[grplen:] for r in self.prodd.values()
-                if r.prod.startswith(grp) and r.grp==prod_group]
-        data=[ itm[-1]!='.' and itm+' ' or itm for itm in data]
+            prod_group = grp[:pp + 1]
+        grplen = len(prod_group)
+        data = [r.prod[grplen:] for r in self.prodd.values()
+                if r.prod.startswith(grp) and r.grp == prod_group]
+        data = [itm[-1] != '.' and itm + ' ' or itm for itm in data]
         data.sort()
-        data=[item.encode(opt.term_enc) for item in data]
+        data = [item.encode(opt.term_enc) for item in data]
         return data
 
-    def complete(self,text,state):
-        if state==0:
-            self.completions=self.gen_completions(text)+[None]
+    def complete(self, text, state):
+        if state == 0:
+            self.completions = self.gen_completions(text) + [None]
         return self.completions[state]
-    def select(self,dfrom=''):
-        flds=('date','acc','prod','amount','dc','note')
-        f=open(self.db+'op','r')
+
+    def select(self, dfrom=''):
+        flds = ('date', 'acc', 'prod', 'amount', 'dc', 'note')
+        f = open(self.db + 'op', 'r')
         for ln in f:
-            if ln>=dfrom:
-                rr=ln.decode(opt.db_enc).rstrip('\n').split(':')
-                yield Rec(date=rr[0],acc=rr[1],prod=rr[2],amount=float(rr[3]),dc=int(rr[4]),note=rr[5],tags=rr[6])
+            if ln >= dfrom:
+                rr = ln.decode(opt.db_enc).rstrip('\n').split(':')
+                yield Rec(date=rr[0], acc=rr[1], prod=rr[2], amount=float(rr[3]), dc=int(rr[4]), note=rr[5], tags=rr[6])
         f.close()
-    def dest(self,lst):
+
+    def dest(self, lst):
         if self.pipe:
             return os.popen(self.pipecmd, 'w')
-        elif len(lst)>int(opt.max_lines) and self.interactive:
-            return os.popen('less','w')
+        elif len(lst) > int(opt.max_lines) and self.interactive:
+            return os.popen('less', 'w')
         else:
             return None
-    def _cmd(self,cmd,c,usage):
+
+    def _cmd(self, cmd, c, usage):
         try:
-            cl=[s for s in shlex.split(c)]
-            check(len(cl),usage)
-            cc=cl[0]
-            meth=getattr(self,'_%s_%s' % (cmd, cc), None)
-            check(meth,usage)
+            cl = [s for s in shlex.split(c)]
+            check(len(cl), usage)
+            cc = cl[0]
+            meth = getattr(self, '_%s_%s' % (cmd, cc), None)
+            check(meth, usage)
             try:
-                pipestart=cl.index('|')
-                self.pipecmd=' '.join(cl[pipestart+1:])
-                self.pipe=True
-                cl=cl[:pipestart]
+                pipestart = cl.index('|')
+                self.pipecmd = ' '.join(cl[pipestart + 1:])
+                self.pipe = True
+                cl = cl[:pipestart]
             except ValueError:
-                self.pipe=False
+                self.pipe = False
             meth(cl[1:])
         except myerr as e:
             print(e)
         except:
             traceback.print_exc()
         return 0
-    def do_calc(self,c):
+
+    def do_calc(self, c):
         try:
             print(("%.2f" % eval(c)))
         except:
             print("%s is not a numeric expression")
+
     def help_calc(self):
         print(""" Usage: calc <expression>
     Evaluate numeric expression <expression> and print the result
     """)
 
-    def do_prod(self,c):
-        self._cmd('prod',c,"Usage: prod ( ls | add | rm | mv) <args>")
+    def do_prod(self, c):
+        self._cmd('prod', c, "Usage: prod ( ls | add | rm | mv) <args>")
+
     def help_prod(self):
         print(""" Usage: prod <subcommand> [options] [<args>]
     Subcommands:
@@ -318,8 +350,10 @@ Type "help" for list of available commands. Type "help <command>" for help about
             - dump full list of items in format appropriate for piping to clipf.
             Useful for data exchange between different clipf instances.
           """)
-    def do_op(self,c):
-        self._cmd('op',c,"Usage: op ( ls | add ) <args>")
+
+    def do_op(self, c):
+        self._cmd('op', c, "Usage: op ( ls | add ) <args>")
+
     def help_op(self):
         print(""" Usage: op <subcommand> [<options>] <args>
     Subcommands:
@@ -343,8 +377,9 @@ Type "help" for list of available commands. Type "help <command>" for help about
         to revoke operation.
             """)
 
-    def do_rep(self,c):
-        self._cmd('rep',c,"Usage: rep ( prod | acc )")
+    def do_rep(self, c):
+        self._cmd('rep', c, "Usage: rep ( prod | acc )")
+
     def help_rep(self):
         print(""" Usage: rep <subcommand> [<args>]
     Subcommands:
@@ -359,308 +394,331 @@ Type "help" for list of available commands. Type "help <command>" for help about
             - show turnover by <tag_group> subtags.
         """)
 
-    def _rep_prod(self,args):
-        ops, args=getopt(args,'t:')
-        acc=''
-        tag=''
-        for k,v in ops:
-            check(k in ('-a','-t'), 'Unknown option: %s' % k)
-            if k=='-t':
-                tag='<'+v
+    def _rep_prod(self, args):
+        ops, args = getopt(args, 't:')
+        acc = ''
+        tag = ''
+        for k, v in ops:
+            check(k in ('-a', '-t'), 'Unknown option: %s' % k)
+            if k == '-t':
+                tag = '<' + v
             else:
-                acc=v
-        prod_group=args and args[0] or ''
-        grplen=len(prod_group)
-        groups={}
-        conds=['r.date<=opt.date_to']
+                acc = v
+        prod_group = args and args[0] or ''
+        grplen = len(prod_group)
+        groups = {}
+        conds = ['r.date<=opt.date_to']
         if prod_group:
             conds.append('r.prod.startswith(prod_group)')
         if acc:
             conds.append('r.acc==acc')
         if tag:
             conds.append('r.tags.find(tag)!=-1')
-        cond=compile(' and '.join(conds),'<string>','eval')
+        cond = compile(' and '.join(conds), '<string>', 'eval')
         for r in self.select(dfrom=opt.date_from):
             if eval(cond):
-                prod=r.prod[grplen:]
-                pp=prod.find('.')
-                if pp==-1:
-                    grp=prod
+                prod = r.prod[grplen:]
+                pp = prod.find('.')
+                if pp == -1:
+                    grp = prod
                 else:
-                    grp=prod[:pp+1]
-                rr=groups.get(grp,None)
+                    grp = prod[:pp + 1]
+                rr = groups.get(grp, None)
                 if not rr:
-                    rr=Rec(prod=grp,dt=0.0,ct=0.0)
-                    groups[grp]=rr
-                rr.dt+=r.amount*r.dc #income
-                rr.ct+=r.amount*(1-r.dc) #expense
-        data=list(groups.values())
-        self.printRepProd(data,prod_group)
-    def _rep_tag(self,args):
-        check(args,"Usage: rep tag <tag_group>")
-        tag_group=args[0]
-        tag_pat='<'+tag_group
-        grplen=len(tag_group)
-        groups={}
-        re_tag=re.compile('<(%s.+?)>' % tag_group.replace('.','\.'))
+                    rr = Rec(prod=grp, dt=0.0, ct=0.0)
+                    groups[grp] = rr
+                rr.dt += r.amount * r.dc  # income
+                rr.ct += r.amount * (1 - r.dc)  # expense
+        data = list(groups.values())
+        self.printRepProd(data, prod_group)
+
+    def _rep_tag(self, args):
+        check(args, "Usage: rep tag <tag_group>")
+        tag_group = args[0]
+        tag_pat = '<' + tag_group
+        grplen = len(tag_group)
+        groups = {}
+        re_tag = re.compile('<(%s.+?)>' % tag_group.replace('.', '\.'))
         for r in self.select(dfrom=opt.date_from):
-            if r.date<=opt.date_to and r.tags.find(tag_pat)!=-1:
-                tag=re_tag.search(r.tags).group(1)
-                prod=tag[grplen:]
-                pp=prod.find('.')
-                if pp==-1:
-                    grp=prod
+            if r.date <= opt.date_to and r.tags.find(tag_pat) != -1:
+                tag = re_tag.search(r.tags).group(1)
+                prod = tag[grplen:]
+                pp = prod.find('.')
+                if pp == -1:
+                    grp = prod
                 else:
-                    grp=prod[:pp+1]
-                rr=groups.get(grp,None)
+                    grp = prod[:pp + 1]
+                rr = groups.get(grp, None)
                 if not rr:
-                    rr=Rec(prod=grp,dt=0.0,ct=0.0)
-                    groups[grp]=rr
-                rr.dt+=r.amount*r.dc #income
-                rr.ct+=r.amount*(1-r.dc) #expense
-        data=list(groups.values())
-        self.printRepProd(data,tag_group)
+                    rr = Rec(prod=grp, dt=0.0, ct=0.0)
+                    groups[grp] = rr
+                rr.dt += r.amount * r.dc  # income
+                rr.ct += r.amount * (1 - r.dc)  # expense
+        data = list(groups.values())
+        self.printRepProd(data, tag_group)
 
-    def printRepProd(self,data,prod_group):
-        data.sort(key=lambda rr:rr.prod)
-        dest=self.dest(data)
-        dt,ct = 0.0, 0.0
-        fmt=self.ffmt("$(prod)  $(dt:amount)  $(ct:amount)  %(per)4.1f%%  $(prod_name)")
+    def printRepProd(self, data, prod_group):
+        data.sort(key=lambda rr: rr.prod)
+        dest = self.dest(data)
+        dt, ct = 0.0, 0.0
+        fmt = self.ffmt(
+            "$(prod)  $(dt:amount)  $(ct:amount)  %(per)4.1f%%  $(prod_name)")
         try:
-            print(self.ffmt("[[ Report by product. Period from $(date_from:param)[[ to $(date_to:param)]]") % opt, file=dest)
+            print(self.ffmt(
+                "[[ Report by product. Period from $(date_from:param)[[ to $(date_to:param)]]") % opt, file=dest)
             if prod_group:
-                print(self.ffmt("[[ Product group: $(group:param)]]") % {'group':prod_group}, file=dest)
+                print(self.ffmt("[[ Product group: $(group:param)]]") % {
+                      'group': prod_group}, file=dest)
             print(opt.fmts['spln'], file=dest)
-            tot=sum([dd.ct for dd in data])
+            tot = sum([dd.ct for dd in data])
             for dd in data:
-                dt+=dd.dt
-                ct+=dd.ct
-                dd.per=dd.ct*100/tot
-                prod=self.prodd.get(prod_group+dd.prod,None)
-                dd.prod_name=prod and prod.name or "code not in list"
+                dt += dd.dt
+                ct += dd.ct
+                dd.per = dd.ct * 100 / tot
+                prod = self.prodd.get(prod_group + dd.prod, None)
+                dd.prod_name = prod and prod.name or "code not in list"
                 print(fmt % dd, file=dest)
             print(opt.fmts['spln'], file=dest)
-            print(self.ffmt("[[Totals:]]     %8.2f  %8.2f") % (dt,ct), file=dest)
+            print(self.ffmt("[[Totals:]]     %8.2f  %8.2f") %
+                  (dt, ct), file=dest)
         except IOError:
             pass
 
-    def _rep_acc(self,args):
-        rb, dt,ct = 0.0, 0.0, 0.0
-        data={}
+    def _rep_acc(self, args):
+        rb, dt, ct = 0.0, 0.0, 0.0
+        data = {}
         for r in self.select():
-            rr=data.get(r.acc,None)
+            rr = data.get(r.acc, None)
             if not rr:
-                rr=Rec(acc=r.acc,rest=0.0,dt=0.0,ct=0.0)
-                data[r.acc]=rr
-            if r.date<opt.date_from:
-                rr.rest+=r.amount*(2*r.dc-1)
-            elif r.date<=opt.date_to:
-                rr.dt+=r.amount*r.dc
-                rr.ct+=r.amount*(1-r.dc)
-        data=list(data.values())
-        data.sort(key=lambda r:r.acc)
-        dest=self.dest(data)
+                rr = Rec(acc=r.acc, rest=0.0, dt=0.0, ct=0.0)
+                data[r.acc] = rr
+            if r.date < opt.date_from:
+                rr.rest += r.amount * (2 * r.dc - 1)
+            elif r.date <= opt.date_to:
+                rr.dt += r.amount * r.dc
+                rr.ct += r.amount * (1 - r.dc)
+        data = list(data.values())
+        data.sort(key=lambda r: r.acc)
+        dest = self.dest(data)
         try:
-            print(self.ffmt("[[Report by accounts. Period from $(date_from:param) [[to $(date_to:param)]]") % opt, file=dest)
+            print(self.ffmt(
+                "[[Report by accounts. Period from $(date_from:param) [[to $(date_to:param)]]") % opt, file=dest)
             print(opt.fmts['spln'], file=dest)
-            fmt=self.ffmt("$(acc:acc_id)  $(rest:amount)  $(dt:amount)  $(ct:amount)  $(re:amount)")
+            fmt = self.ffmt(
+                "$(acc:acc_id)  $(rest:amount)  $(dt:amount)  $(ct:amount)  $(re:amount)")
             for dd in data:
-                dd.re=dd.rest+dd.dt-dd.ct
-                rb+=dd.rest
-                dt+=dd.dt
-                ct+=dd.ct
+                dd.re = dd.rest + dd.dt - dd.ct
+                rb += dd.rest
+                dt += dd.dt
+                ct += dd.ct
                 print(fmt % dd, file=dest)
             print(opt.fmts['spln'], file=dest)
-            print(self.ffmt("[[Totals:]]     %8.2f  %8.2f  %8.2f  %8.2f") % (rb,dt,ct,rb+dt-ct), file=dest)
+            print(self.ffmt("[[Totals:]]     %8.2f  %8.2f  %8.2f  %8.2f") % (
+                rb, dt, ct, rb + dt - ct), file=dest)
         except IOError:
             pass
 
-
-    def _prod_ls(self,args):
-        prod_group=args and args[0] or ''
-        grplen=len(prod_group)
-        data=[r.copy() for r in self.prodd.values() if r.grp==prod_group]
+    def _prod_ls(self, args):
+        prod_group = args and args[0] or ''
+        grplen = len(prod_group)
+        data = [r.copy() for r in self.prodd.values() if r.grp == prod_group]
         for r in data:
-            r.prod=r.prod[grplen:]
-        data.sort(key=lambda k:k.prod)
-        dest=self.dest(data)
-        fmt=self.ffmt("$(prod)  %(dc)d  $(name:prod_name)")
+            r.prod = r.prod[grplen:]
+        data.sort(key=lambda k: k.prod)
+        dest = self.dest(data)
+        fmt = self.ffmt("$(prod)  %(dc)d  $(name:prod_name)")
         try:
-            print(self.ffmt("[[Product list. Group: $(group:param)]]") % {'group':prod_group}, file=dest)
+            print(self.ffmt("[[Product list. Group: $(group:param)]]") % {
+                  'group': prod_group}, file=dest)
             print(opt.fmts['spln'], file=dest)
             for r in data:
                 print(fmt % r, file=dest)
         except IOError:
             pass
+
     def saveProds(self):
-        f=open(self.db+'prod.tmp','w')
+        f = open(self.db + 'prod.tmp', 'w')
         for prod in self.prodd.values():
-            rr=self.prodfmt % prod
+            rr = self.prodfmt % prod
             f.write(rr.encode(opt.db_enc))
         f.close()
-        os.remove(self.db+'prod')
-        os.rename(self.db+'prod.tmp', self.db+'prod')
+        os.remove(self.db + 'prod')
+        os.rename(self.db + 'prod.tmp', self.db + 'prod')
 
-    def _prod_add(self,args):
-        usage="Usage: prod add [-d] <prod_code> <prod_name>"
-        ops,args = getopt(args,'d')
-        check(len(args)==2, usage)
-        ops=dict(ops)
+    def _prod_add(self, args):
+        usage = "Usage: prod add [-d] <prod_code> <prod_name>"
+        ops, args = getopt(args, 'd')
+        check(len(args) == 2, usage)
+        ops = dict(ops)
         if '-d' in ops:
-            dc=1
+            dc = 1
         else:
-            dc=0
-        prod_code=args[0]
-        group=prod_code.rstrip('.')
-        pp=group.rfind('.')
-        if pp==-1:
-            group=''
+            dc = 0
+        prod_code = args[0]
+        group = prod_code.rstrip('.')
+        pp = group.rfind('.')
+        if pp == -1:
+            group = ''
         else:
-            group=group[:pp+1]
-        chk=self.prodd.get(group,None)
-        check(chk or (group==''), "Product group %s don't exists" % group)
-        args=Rec(prod=prod_code,grp=group,name=args[1],dc=dc)
-        check(':' not in args.prod and ':' not in args.name, "item code/name must not contain colon ':'")
-        self.prodd[prod_code]=args
-        f=open(self.db+'prod','a')
-        rr=self.prodfmt % args
+            group = group[:pp + 1]
+        chk = self.prodd.get(group, None)
+        check(chk or (group == ''), "Product group %s don't exists" % group)
+        args = Rec(prod=prod_code, grp=group, name=args[1], dc=dc)
+        check(':' not in args.prod and ':' not in args.name,
+              "item code/name must not contain colon ':'")
+        self.prodd[prod_code] = args
+        f = open(self.db + 'prod', 'a')
+        rr = self.prodfmt % args
         f.write(rr.encode(opt.term_enc))
         f.close()
         print(("Product %s added" % args.prod))
-    def _prod_dump(self,args):
+
+    def _prod_dump(self, args):
         for r in self.prodd.values():
-            r.dcopt=(r.dc==1 and '-d' or '')
+            r.dcopt = (r.dc == 1 and '-d' or '')
             print(("prod add %(dcopt)s %(prod)s '%(name)s'" % r))
-    def _prod_rm(self,args):
-        usage="prod del <prod_code>"
-        check(len(args)==1, usage)
-        data=[prod for prod in self.prodd.keys() if prod.startswith(args[0])]
+
+    def _prod_rm(self, args):
+        usage = "prod del <prod_code>"
+        check(len(args) == 1, usage)
+        data = [prod for prod in self.prodd.keys() if prod.startswith(args[0])]
         for prod in data:
             del self.prodd[prod]
             print(("Product %s deleted." % prod))
         self.saveProds()
-    def _prod_mv(self,args):
-        usage="Usage: prod mv <from_code_pattern> <to_code_pattern>"
-        check(len(args)==2, usage)
-        pfrom,pto = args
-        flen=len(pfrom)
-        updated=[]
+
+    def _prod_mv(self, args):
+        usage = "Usage: prod mv <from_code_pattern> <to_code_pattern>"
+        check(len(args) == 2, usage)
+        pfrom, pto = args
+        flen = len(pfrom)
+        updated = []
         for pc in list(self.prodd.keys()):
             if pc.startswith(pfrom):
-                pcnew=pto+pc[flen:]
-                prod=self.prodd[pc]
-                prod.prod=pcnew
-                grp=prod.prod.rstrip('.')
+                pcnew = pto + pc[flen:]
+                prod = self.prodd[pc]
+                prod.prod = pcnew
+                grp = prod.prod.rstrip('.')
                 try:
-                    pp=grp.rindex('.')
-                    grp=grp[:pp+1]
+                    pp = grp.rindex('.')
+                    grp = grp[:pp + 1]
                 except ValueError:
-                    grp=''
-                prod.grp=grp
+                    grp = ''
+                prod.grp = grp
                 updated.append(prod)
                 del self.prodd[pc]
-        self.prodd.update([(p.prod,p) for p in updated])
-        pcnt=len(updated)
-        foptmp=open(self.db+'op.tmp','w')
-        opcnt=0
+        self.prodd.update([(p.prod, p) for p in updated])
+        pcnt = len(updated)
+        foptmp = open(self.db + 'op.tmp', 'w')
+        opcnt = 0
         for op in self.select():
             if op.prod.startswith(pfrom):
-                op.prod=pto+op.prod[flen:]
-                opcnt+=1
+                op.prod = pto + op.prod[flen:]
+                opcnt += 1
             foptmp.write(self.opfmt % op)
         foptmp.close()
         self.saveProds()
-        os.remove(self.db+'op')
-        os.rename(self.db+'op.tmp',self.db+'op')
-        print(("renamed %d items in %d operantions" % (pcnt,opcnt)))
-    def _op_ls(self,args):
-        fmt=self.ffmt('$(date)  $(acc:acc_id)  $(amount)  $(prod:prod_code_full)  $(note) $(tags:tags)')
-        ops,args=getopt(args,'t:')
+        os.remove(self.db + 'op')
+        os.rename(self.db + 'op.tmp', self.db + 'op')
+        print(("renamed %d items in %d operantions" % (pcnt, opcnt)))
+
+    def _op_ls(self, args):
+        fmt = self.ffmt(
+            '$(date)  $(acc:acc_id)  $(amount)  $(prod:prod_code_full)  $(note) $(tags:tags)')
+        ops, args = getopt(args, 't:')
         if ops:
-            k,tag=ops[0]
-            check(k=='-t',"Unknown option %s" % k)
-            tag='<'+tag
+            k, tag = ops[0]
+            check(k == '-t', "Unknown option %s" % k)
+            tag = '<' + tag
         else:
-            tag=''
-        prod_code=args and args[0] or ''
+            tag = ''
+        prod_code = args and args[0] or ''
         dt, ct = 0.0, 0.0
-        data=[r for r in self.select(dfrom=opt.date_from)
-                if r.date<=opt.date_to and r.prod.startswith(prod_code) and (not tag or r.tags.find(tag)!=-1)]
-        data.sort(key=lambda x:(x.date,x.acc))
-        dest=self.dest(data)
+        data = [r for r in self.select(dfrom=opt.date_from)
+                if r.date <= opt.date_to and r.prod.startswith(prod_code) and (not tag or r.tags.find(tag) != -1)]
+        data.sort(key=lambda x: (x.date, x.acc))
+        dest = self.dest(data)
         try:
             print(self.ffmt("[[Operations]]"), file=dest)
             print(opt.fmts['spln'], file=dest)
             for d in data:
-                dt+=d.amount*d.dc
-                ct+=d.amount*(1-d.dc)
+                dt += d.amount * d.dc
+                ct += d.amount * (1 - d.dc)
                 print(fmt % d, file=dest)
             print(opt.fmts['spln'], file=dest)
-            print(self.ffmt("[[Totals: dt=]]%.2f  [[ct=]]%.2f") %(dt,ct), file=dest)
+            print(self.ffmt("[[Totals: dt=]]%.2f  [[ct=]]%.2f") %
+                  (dt, ct), file=dest)
         except IOError:
             pass
-    def _op_dump(self,args):
+
+    def _op_dump(self, args):
         for r in self.select(dfrom=opt.date_from):
-            if r.date<=opt.date_to:
-                print(("op add -d %(date)s -a %(acc)s %(prod)s %(amount).2f '%(note)s'" % r))
-    def _op_add(self,args):
-        usage="Usage: op add [-d <op_date>] [-a acc] [-t tag] <prod_code> <amount> [note]"
-        ops,args = getopt(args,'a:d:t:')
-        tags=[t for k,t in ops if k=='-t']
-        check(len(args)>1,usage)
-        ops=dict(ops)
-        prod=self.prodd.get(args[0],None)
-        check(prod,'No such product code: %s' % args[0])
-        if len(args)>2:
-            note=args[2]
+            if r.date <= opt.date_to:
+                print(
+                    ("op add -d %(date)s -a %(acc)s %(prod)s %(amount).2f '%(note)s'" % r))
+
+    def _op_add(self, args):
+        usage = "Usage: op add [-d <op_date>] [-a acc] [-t tag] <prod_code> <amount> [note]"
+        ops, args = getopt(args, 'a:d:t:')
+        tags = [t for k, t in ops if k == '-t']
+        check(len(args) > 1, usage)
+        ops = dict(ops)
+        prod = self.prodd.get(args[0], None)
+        check(prod, 'No such product code: %s' % args[0])
+        if len(args) > 2:
+            note = args[2]
         else:
-            note=''
-        dd=Rec(
-            acc= ops.get('-a',opt.acc),
-            date= fixDate(ops.get('-d',opt.date)),
-            prod= prod.prod,
-            amount= float(args[1]),
+            note = ''
+        dd = Rec(
+            acc=ops.get('-a', opt.acc),
+            date=fixDate(ops.get('-d', opt.date)),
+            prod=prod.prod,
+            amount=float(args[1]),
             dc=prod.dc,
-            tags=''.join(["<%s>" %t for t in tags]),
-            note= note)
+            tags=''.join(["<%s>" % t for t in tags]),
+            note=note)
         check(':' not in dd.acc, "Account must not contain colon ':'")
         check(':' not in dd.note, "Note must not contain colon ':'")
-        f=open(self.db+'op','a')
-        rr=self.opfmt % dd
+        f = open(self.db + 'op', 'a')
+        rr = self.opfmt % dd
         f.write(rr.encode(opt.db_enc))
         f.close()
-    def do_show(self,c):
-        usage="Usage: show [<option_name>]"
-        cl=c.split()
-        opts=opt.options
+
+    def do_show(self, c):
+        usage = "Usage: show [<option_name>]"
+        cl = c.split()
+        opts = opt.options
         if cl:
-            opts=cl
+            opts = cl
         for o in opts:
-            if o[0]!='_':
+            if o[0] != '_':
                 if o in opt.options:
                     print(("%s = %s" % (o, opt[o])))
                 else:
                     print(("Unknown option:%s" % o))
+
     def help_show(self):
         print(""" Usage: show [<option>]
         Show current option settings (all or for <option> only)
         """)
-    def do_set(self,c):
-        usage="Usage: set <option> <value>"
-        cl=shlex.split(c)
+
+    def do_set(self, c):
+        usage = "Usage: set <option> <value>"
+        cl = shlex.split(c)
         try:
-            check(len(cl)==2, usage)
-            k,v = cl
+            check(len(cl) == 2, usage)
+            k, v = cl
             check(k in opt.options, "Unknown option: %s" % k)
             if k.startswith('date'):
-                v=fixDate(v)
+                v = fixDate(v)
             # set option value
-            setattr(opt,k,v)
+            setattr(opt, k, v)
         except myerr as e:
             print(e)
         except:
             traceback.print_exc()
         self.setPrompt()
+
     def help_set(self):
         print(""" Usage: set <option> <value>
     Possible options:
@@ -672,15 +730,17 @@ Type "help" for list of available commands. Type "help <command>" for help about
         Enter all dates in any of this formats: YYYY-MM-DD or MM-DD or DD.
         """)
 
-    def do_quit(self,c):
+    def do_quit(self, c):
         return 1
-    do_q=do_quit
+    do_q = do_quit
+
     def help_quit(self):
         print("Quit the program.")
 
+
 def run():
-    app=App()
-    app.interactive=sys.stdin.isatty()
+    app = App()
+    app.interactive = sys.stdin.isatty()
     if app.interactive:
         readline.parse_and_bind("tab: complete")
         readline.set_completer_delims(' .')
@@ -690,5 +750,6 @@ def run():
         for ln in sys.stdin:
             app.onecmd(ln)
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     run()
