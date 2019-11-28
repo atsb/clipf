@@ -11,8 +11,8 @@ import sys, os, cmd, datetime, shlex, re, traceback, readline
 from getopt import getopt
 from os.path import expanduser
 
-version='0.5'
-db_version='0.4'
+CLIPF_APPLICATION_VERSION='0.5'
+CLIPF_DATABASE_VERSION='0.4'
 
 re_date=re.compile('^(((?P<year>\d+)-)?(?P<month>\d+)-)?(?P<day>\d+)$')
 opts,args = getopt(sys.argv[1:],'hm',['help','init','mono','migrate'])
@@ -34,8 +34,8 @@ if not os.access(confpath,os.F_OK):
     else:
         print(("config does not exist, creating..."), end=' ')
         os.mkdir(confpath)
-        ver=open(confpath+'version','w')
-        ver.write(db_version)
+        ver=open(confpath+'CLIPF_APPLICATION_VERSION','w')
+        ver.write(CLIPF_DATABASE_VERSION)
         ver.close()
         dbpath=confpath+'db/'
         os.mkdir(dbpath)
@@ -65,7 +65,7 @@ def migrate(confpath,ver):
     try:
         os.system('cp -r %s/db %s/db~' % (confpath, confpath))
         _migrate(confpath,ver)
-        open(confpath+'version','w').write(str(db_version))
+        open(confpath+'CLIPF_APPLICATION_VERSION','w').write(str(CLIPF_DATABASE_VERSION))
         os.system('rm -r %s/db~' % confpath)
         print("Migration completed")
     except:
@@ -77,18 +77,18 @@ def migrate(confpath,ver):
 
 
 #check db version
-if not os.access(confpath+'version',os.F_OK):
+if not os.access(confpath+'CLIPF_APPLICATION_VERSION',os.F_OK):
     ver='0.3.5'
 else:
-    ver=open(confpath+'version','r').read().strip('\n')
-if ver!=db_version:
+    ver=open(confpath+'CLIPF_APPLICATION_VERSION','r').read().strip('\n')
+if ver!=CLIPF_DATABASE_VERSION:
     if '--migrate' in opts:
         migrate(confpath,ver)
         sys.exit(0)
     else:
         print("Version mismatch")
-        print(("""db version is %s while program require %s version. 
-        Run clipf with --migrate option to convert database""" % (ver,db_version)))
+        print(("""db version is %s while program require %s version.
+        Run clipf with --migrate option to convert database""" % (ver,CLIPF_DATABASE_VERSION)))
         sys.exit(1)
 
 
@@ -171,12 +171,12 @@ class opt(object, metaclass=dtype):
 def execConf(fn):
     if os.access(fn,os.F_OK):
         with open(fn,'r') as execConf:
-        
+
           #must be executed after opt class definition
           execConf('/etc/clipf.conf')
           execConf(expanduser('~/.clipf.conf'))
           execConf(confpath+'clipf.conf')
-        
+
 if '-m' in opts or '--mono' in opts:
     opt.fmts=opt.fmtm
 
@@ -222,7 +222,7 @@ class App(cmd.Cmd):
     def preloop(self):
         print(("""clipf v%s - Personal finance accounting in command line.
 Visit program site https://github.com/atsb/clipf for details.
-Type "help" for list of available commands. Type "help <command>" for help about particular command.""" % version))
+Type "help" for list of available commands. Type "help <command>" for help about particular command.""" % CLIPF_APPLICATION_VERSION))
     def _fx(self,m):
         m=m.group(1)
         if ':' in m:
@@ -242,7 +242,7 @@ Type "help" for list of available commands. Type "help <command>" for help about
         else:
             prod_group=grp[:pp+1]
         grplen=len(prod_group)
-        data=[r.prod[grplen:] for r in self.prodd.values() 
+        data=[r.prod[grplen:] for r in self.prodd.values()
                 if r.prod.startswith(grp) and r.grp==prod_group]
         data=[ itm[-1]!='.' and itm+' ' or itm for itm in data]
         data.sort()
@@ -286,7 +286,7 @@ Type "help" for list of available commands. Type "help <command>" for help about
         except myerr as e:
             print(e)
         except:
-            traceback.print_exc() 
+            traceback.print_exc()
         return 0
     def do_calc(self,c):
         try:
@@ -303,7 +303,7 @@ Type "help" for list of available commands. Type "help <command>" for help about
     def help_prod(self):
         print(""" Usage: prod <subcommand> [options] [<args>]
     Subcommands:
-        add [-d] <item_code> <item_name> 
+        add [-d] <item_code> <item_name>
             - add new item. '-d' option mark item as income
               Type <item_name> in quotes, if it contain spaces
         rm <item_code_pattern>
@@ -329,7 +329,7 @@ Type "help" for list of available commands. Type "help <command>" for help about
                 '-a' - override operation account to <account> (see 'set' for details)
                 '-t' - mark operation with <tag>. Several '-t' options may be used to mark
                 operation with several tags.
-              the income/expense flag for operation would be taken from item 
+              the income/expense flag for operation would be taken from item
               type <note> in quotes, if it contain spaces
         ls [-t <tag_prefix>] [<item_code_pattern>]
             - show list of operations for the default reporting period (see 'help set' for details)
@@ -349,8 +349,8 @@ Type "help" for list of available commands. Type "help <command>" for help about
         print(""" Usage: rep <subcommand> [<args>]
     Subcommands:
         prod [-t <tag_prefix>] [-a <account>] [<item_code>]
-            - show turnover report with total turnover by each subling of <item_code> item group. 
-              Default by root group. 
+            - show turnover report with total turnover by each subling of <item_code> item group.
+              Default by root group.
                 '-t' - select operations, tagged with tags, starts with <tag_prefix>
                 '-a' - select operations by account <account>
         acc
@@ -365,7 +365,7 @@ Type "help" for list of available commands. Type "help <command>" for help about
         tag=''
         for k,v in ops:
             check(k in ('-a','-t'), 'Unknown option: %s' % k)
-            if k=='-t': 
+            if k=='-t':
                 tag='<'+v
             else:
                 acc=v
@@ -443,7 +443,7 @@ Type "help" for list of available commands. Type "help <command>" for help about
             print(self.ffmt("[[Totals:]]     %8.2f  %8.2f") % (dt,ct), file=dest)
         except IOError:
             pass
-               
+
     def _rep_acc(self,args):
         rb, dt,ct = 0.0, 0.0, 0.0
         data={}
@@ -584,7 +584,7 @@ Type "help" for list of available commands. Type "help <command>" for help about
             tag=''
         prod_code=args and args[0] or ''
         dt, ct = 0.0, 0.0
-        data=[r for r in self.select(dfrom=opt.date_from) 
+        data=[r for r in self.select(dfrom=opt.date_from)
                 if r.date<=opt.date_to and r.prod.startswith(prod_code) and (not tag or r.tags.find(tag)!=-1)]
         data.sort(key=lambda x:(x.date,x.acc))
         dest=self.dest(data)
