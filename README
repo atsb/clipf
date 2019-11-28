@@ -3,18 +3,18 @@ Original Author: Galtsev Denis <galtsevdv@gmail.com>
 
 Installation:
 
-Not required. It is simple python script. Put it to any directory in Your PATH
+Not required. It is a python script. Put it to any directory in Your PATH
 
 Configuration:
 
 Not required. Program would create config directory and empty database
-at start, if config directory doesn't exists (default to "~/.clipf/"). 
+at start, if config directory doesn't exists (default to "~/.clipf/").
 
 Usage description:
 
   clipf [<config_path>]
    - start clipf with coniguration in <config_path> (default to
-     ~/.clipf). If config_path doesn't exists, it would be created 
+     ~/.clipf). If config_path doesn't exists, it would be created
      with appropriate defaults.
 
 All commands described in embedded help. Type "help" in command line
@@ -124,5 +124,3 @@ Program understand input stream redirection:
 
 You can setup aliases (shortcuts) for frequently used operations in config file (default to ~/.clipf/clipf.conf).
 See configuration file for examples.
-
-
